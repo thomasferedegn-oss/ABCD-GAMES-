@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Playful Phonics & Amharic Match</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #f0f9ff;
+            background-image: radial-gradient(#bae6fd 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        
+        .bounce-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .shake {
+            animation: shake 0.5s;
+        }
+
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+            100% { transform: translateX(0); }
+        }
+
+        .pop {
+            animation: pop 0.3s ease-out forwards;
+        }
+
+        @keyframes pop {
+            0% { transform: scale(0.8); opacity: 0; }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Match Game Line container */
+        #match-svg-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-gray-800 flex flex-col items-center py-8 px-4">
+
+    <!-- Header & Navigation -->
+    <header class="w-full max-w-5xl mx-auto text-center mb-8">
+        <h1 class="text-4xl md:text-5xl font-extrabold text-blue-600 mb-6 drop-shadow-md">
+            <i class="fa-solid fa-star text-yellow-400 mr-2"></i>
+            Phonics Fun & Match
+            <i class="fa-solid fa-star text-yellow-400 ml-2"></i>
+        </h1>
+        <nav class="flex flex-wrap justify-center gap-3">
+            <button onclick="switchMode('flashcards')" id="nav-flashcards" class="nav-btn bg-white border-4 border-blue-400 text-blue-600 font-bold py-2 px-4 rounded-full bounce-hover transition-all shadow-md">
+                <i class="fa-solid fa-images mr-1"></i> Flashcards
+            </button>
+            <button onclick="switchMode('listenMatch')" id="nav-listenMatch" class="nav-btn bg-white border-4 border-green-400 text-green-600 font-bold py-2 px-4 rounded-full bounce-hover transition-all shadow-md">
+                <i class="fa-solid fa-ear-listen mr-1"></i> Listen & Match
+            </button>
+            <button onclick="switchMode('findPhoneme')" id="nav-findPhoneme" class="nav-btn bg-white border-4 border-purple-400 text-purple-600 font-bold py-2 px-4 rounded-full bounce-hover transition-all shadow-md">
+                <i class="fa-solid fa-font mr-1"></i> Find Phoneme
+            </button>
+            <button onclick="switchMode('amharicMatch')" id="nav-amharicMatch" class="nav-btn bg-white border-4 border-orange-400 text-orange-600 font-bold py-2 px-4 rounded-full bounce-hover transition-all shadow-md">
+                <i class="fa-solid fa-language mr-1"></i> Amharic Match
+            </button>
+        </nav>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="w-full max-w-5xl mx-auto bg-white rounded-3xl shadow-xl p-6 md:p-8 relative min-h-[500px]">
+        
+        <!-- Mode 1: Flashcards -->
+        <div id="mode-flashcards" class="mode-container hidden">
+            <h2 class="text-2xl font-bold text-center text-blue-500 mb-6">Interactive Flashcards</h2>
+            <p class="text-center text-gray-500 mb-6">Click on any card to hear the sound!</p>
+            <div id="flashcards-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+
+        <!-- Mode 2: Listen & Match -->
+        <div id="mode-listenMatch" class="mode-container hidden flex flex-col items-center">
+            <h2 class="text-2xl font-bold text-center text-green-500 mb-4">Listen & Match the Image</h2>
+            <div class="flex flex-col items-center w-full max-w-2xl bg-green-50 rounded-2xl p-6 border-2 border-green-200">
+                <button onclick="playCurrentQuestionAudio()" class="w-24 h-24 bg-green-500 text-white rounded-full flex items-center justify-center text-4xl hover:bg-green-400 hover:scale-110 transition-all shadow-lg mb-8">
+                    <i class="fa-solid fa-play"></i>
+                </button>
+                <p class="text-lg font-semibold text-gray-600 mb-4">Click the image that matches the word you heard:</p>
+                
+                <div id="lm-options" class="flex flex-wrap justify-center gap-6 w-full">
+                    <!-- Injected via JS -->
+                </div>
+
+                <div id="lm-feedback" class="mt-8 text-2xl font-bold h-8 transition-all"></div>
+                <button onclick="initListenMatch()" id="lm-next-btn" class="mt-4 hidden bg-green-500 text-white px-6 py-2 rounded-full font-bold bounce-hover">Next <i class="fa-solid fa-arrow-right"></i></button>
+            </div>
+        </div>
+
+        <!-- Mode 3: Find Phoneme -->
+        <div id="mode-findPhoneme" class="mode-container hidden flex flex-col items-center">
+            <h2 class="text-2xl font-bold text-center text-purple-500 mb-4">Click the Correct Phoneme</h2>
+            <div class="flex flex-col items-center w-full max-w-2xl bg-purple-50 rounded-2xl p-6 border-2 border-purple-200">
+                
+                <div class="relative w-48 h-48 mb-6">
+                    <img id="fp-image" src="" alt="Question" class="w-full h-full object-cover rounded-2xl shadow-md border-4 border-white">
+                    <button onclick="playCurrentQuestionAudio()" class="absolute -bottom-3 -right-3 w-14 h-14 bg-blue-500 text-white rounded-full flex items-center justify-center text-xl hover:bg-blue-400 hover:scale-110 transition-all shadow-lg">
+                        <i class="fa-solid fa-volume-high"></i>
+                    </button>
+                </div>
+                
+                <p class="text-lg font-semibold text-gray-600 mb-4">What letter does this start with?</p>
+                
+                <div id="fp-options" class="flex justify-center gap-6 w-full">
+                    <!-- Injected via JS -->
+                </div>
+
+                <div id="fp-feedback" class="mt-8 text-2xl font-bold h-8 transition-all"></div>
+                <button onclick="initFindPhoneme()" id="fp-next-btn" class="mt-4 hidden bg-purple-500 text-white px-6 py-2 rounded-full font-bold bounce-hover">Next <i class="fa-solid fa-arrow-right"></i></button>
+            </div>
+        </div>
+
+        <!-- Mode 4: Amharic Match -->
+        <div id="mode-amharicMatch" class="mode-container hidden flex flex-col items-center relative">
+            <h2 class="text-2xl font-bold text-center text-orange-500 mb-2">Amharic vs English Match</h2>
+            <p class="text-center text-gray-500 mb-6">Click an English letter, then click its Amharic equivalent.</p>
+            
+            <div class="relative w-full max-w-3xl flex justify-between bg-orange-50 rounded-2xl p-6 border-2 border-orange-200 min-h-[400px]">
+                <svg id="match-svg-container"></svg>
+                
+                <div id="am-left-col" class="flex flex-col gap-4 z-20 w-1/3">
+                    <!-- Injected via JS -->
+                </div>
+                
+                <div id="am-right-col" class="flex flex-col gap-4 z-20 w-1/3">
+                    <!-- Injected via JS -->
+                </div>
+            </div>
+            <button onclick="initAmharicMatch()" id="am-refresh-btn" class="mt-6 bg-orange-500 text-white px-6 py-2 rounded-full font-bold bounce-hover">
+                <i class="fa-solid fa-rotate-right mr-1"></i> New Set
+            </button>
+        </div>
+
+    </main>
+
+    <!-- Audio Player (Hidden) -->
+    <audio id="success-sound" src="https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3"></audio>
+    <audio id="error-sound" src="https://assets.mixkit.co/active_storage/sfx/2955/2955-preview.mp3"></audio>
+
+    <script>
+        // Data derived from the requested PDF mapping & requirements
+        // Using placehold.co for placeholder images that can be replaced easily
+        const getImgUrl = (text, bg, fg) => `https://placehold.co/300x300/${bg}/${fg}?text=${text}`;
+
+        const phonicsData = [
+            { letter: 'A', word: 'apple', amharic: 'አ', img: getImgUrl('Apple', 'EF4444', 'FFF') },
+            { letter: 'B', word: 'bat', amharic: 'ብ', img: getImgUrl('Bat', '3B82F6', 'FFF') },
+            { letter: 'C', word: 'cat', amharic: 'ክ', img: getImgUrl('Cat', 'F59E0B', 'FFF') },
+            { letter: 'D', word: 'dog', amharic: 'ድ', img: getImgUrl('Dog', '8B5CF6', 'FFF') },
+            { letter: 'E', word: 'egg', amharic: 'ኤ', img: getImgUrl('Egg', 'FCD34D', '000') },
+            { letter: 'F', word: 'fish', amharic: 'ፍ', img: getImgUrl('Fish', '06B6D4', 'FFF') },
+            { letter: 'G', word: 'goat', amharic: 'ግ', img: getImgUrl('Goat', '10B981', 'FFF') },
+            { letter: 'H', word: 'hen', amharic: 'ህ', img: getImgUrl('Hen', 'F43F5E', 'FFF') },
+            { letter: 'I', word: 'igloo', amharic: 'ኢ', img: getImgUrl('Igloo', '93C5FD', '000') },
+            { letter: 'J', word: 'jet', amharic: 'ጅ', img: getImgUrl('Jet', '64748B', 'FFF') },
+            { letter: 'K', word: 'king', amharic: 'ክ', img: getImgUrl('King', 'EAB308', '000') },
+            { letter: 'L', word: 'leg', amharic: 'ል', img: getImgUrl('Leg', 'D946EF', 'FFF') },
+            { letter: 'M', word: 'mango', amharic: 'ም', img: getImgUrl('Mango', 'F97316', 'FFF') },
+            { letter: 'N', word: 'nest', amharic: 'ን', img: getImgUrl('Nest', '84CC16', 'FFF') },
+            { letter: 'O', word: 'ox', amharic: 'ኦ', img: getImgUrl('Ox', '57534E', 'FFF') },
+            { letter: 'P', word: 'pen', amharic: 'ፕ', img: getImgUrl('Pen', '3B82F6', 'FFF') },
+            { letter: 'Q', word: 'queen', amharic: 'ኩ', img: getImgUrl('Queen', 'EC4899', 'FFF') },
+            { letter: 'R', word: 'rat', amharic: 'ር', img: getImgUrl('Rat', '9CA3AF', '000') },
+            { letter: 'S', word: 'star', amharic: 'ስ', img: getImgUrl('Star', 'FDE047', '000') },
+            { letter: 'T', word: 'tent', amharic: 'ት', img: getImgUrl('Tent', '14B8A6', 'FFF') },
+            { letter: 'U', word: 'umbrella', amharic: 'አ', img: getImgUrl('Umbrella', '6366F1', 'FFF') },
+            { letter: 'V', word: 'van', amharic: 'ቭ', img: getImgUrl('Van', 'A855F7', 'FFF') },
+            { letter: 'W', word: 'wig', amharic: 'ው', img: getImgUrl('Wig', 'FB923C', 'FFF') },
+            { letter: 'X', word: 'fox', amharic: 'ክስ', img: getImgUrl('Fox', 'EA580C', 'FFF') },
+            { letter: 'Y', word: 'yacht', amharic: 'ይ', img: getImgUrl('Yacht', '0EA5E9', 'FFF') },
+            { letter: 'Z', word: 'zebra', amharic: 'ዝ', img: getImgUrl('Zebra', '000000', 'FFF') },
+            { letter: 'Sh', word: 'sheep', amharic: 'ሽ', img: getImgUrl('Sheep', 'E5E7EB', '000') },
+            { letter: 'Ch', word: 'chin', amharic: 'ች', img: getImgUrl('Chin', 'FCA5A5', '000') },
+            { letter: 'Ph', word: 'phone', amharic: 'ፍ', img: getImgUrl('Phone', '4ADE80', '000') }
+        ];
+
+        // --- AUDIO SYSTEM ---
+        let voices = [];
+        let preferredVoice = null;
+        const synth = window.speechSynthesis;
+
+        function loadVoices() {
+            voices = synth.getVoices();
+            // Try to find a female British voice
+            preferredVoice = voices.find(v => v.lang === 'en-GB' && (v.name.includes('Female') || v.name.includes('Google UK English Female'))) 
+                             || voices.find(v => v.lang === 'en-GB')
+                             || voices.find(v => v.lang.startsWith('en'))
+                             || voices[0];
+        }
+
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = loadVoices;
+        } else {
+            loadVoices();
+        }
+
+        function speak(text) {
+            if (synth.speaking) synth.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            if (preferredVoice) utterance.voice = preferredVoice;
+            utterance.rate = 0.85; // Slightly slower for kids
+            utterance.pitch = 1.1; // Slightly higher pitch
+            synth.speak(utterance);
+        }
+
+        function playSuccess() { document.getElementById('success-sound').play().catch(e => console.log(e)); }
+        function playError() { document.getElementById('error-sound').play().catch(e => console.log(e)); }
+
+        // --- NAVIGATION ---
+        function switchMode(mode) {
+            document.querySelectorAll('.mode-container').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`mode-${mode}`).classList.remove('hidden');
+            
+            // Reset active styles on tabs
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-100', 'bg-green-100', 'bg-purple-100', 'bg-orange-100');
+            });
+            
+            const activeBtn = document.getElementById(`nav-${mode}`);
+            if(mode === 'flashcards') activeBtn.classList.add('bg-blue-100');
+            if(mode === 'listenMatch') activeBtn.classList.add('bg-green-100');
+            if(mode === 'findPhoneme') activeBtn.classList.add('bg-purple-100');
+            if(mode === 'amharicMatch') activeBtn.classList.add('bg-orange-100');
+
+            // Init specific mode
+            if(mode === 'flashcards') initFlashcards();
+            if(mode === 'listenMatch') initListenMatch();
+            if(mode === 'findPhoneme') initFindPhoneme();
+            if(mode === 'amharicMatch') initAmharicMatch();
+        }
+
+        // Utility
+        function shuffle(array) {
+            return array.sort(() => Math.random() - 0.5);
+        }
+        function getRandomItems(arr, count) {
+            const shuffled = [...arr].sort(() => 0.5 - Math.random());
+            return shuffled.slice(0, count);
+        }
+
+        // --- MODE 1: FLASHCARDS ---
+        function initFlashcards() {
+            const grid = document.getElementById('flashcards-grid');
+            if(grid.children.length > 0) return; // already initialized
+
+            phonicsData.forEach(item => {
+                const card = document.createElement('div');
+                card.className = "bg-white border-2 border-gray-100 rounded-2xl shadow-sm p-4 flex flex-col items-center cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all group pop";
+                card.onclick = () => {
+                    speak(`${item.letter} is for ${item.word}`);
+                    card.classList.add('border-blue-400', 'bg-blue-50');
+                    setTimeout(() => card.classList.remove('border-blue-400', 'bg-blue-50'), 1000);
+                };
+
+                card.innerHTML = `
+                    <div class="relative w-full aspect-square mb-3 overflow-hidden rounded-xl">
+                        <img src="${item.img}" alt="${item.word}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300">
+                    </div>
+                    <div class="flex justify-between items-center w-full px-2">
+                        <span class="text-3xl font-extrabold text-blue-600">${item.letter}</span>
+                        <span class="text-3xl font-bold text-orange-500">${item.amharic}</span>
+                    </div>
+                    <span class="text-lg font-semibold text-gray-700 capitalize mt-1">${item.word}</span>
+                    <button class="mt-2 text-blue-400 group-hover:text-blue-600 transition-colors">
+                        <i class="fa-solid fa-circle-play text-2xl"></i>
+                    </button>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // --- GLOBAL STATE FOR MODES 2 & 3 ---
+        let currentQuestionItem = null;
+
+        function playCurrentQuestionAudio() {
+            if(currentQuestionItem) speak(currentQuestionItem.word);
+        }
+
+        // --- MODE 2: LISTEN & MATCH ---
+        function initListenMatch() {
+            const items = getRandomItems(phonicsData, 3);
+            currentQuestionItem = items[0]; // Target
+            const options = shuffle([...items]);
+
+            document.getElementById('lm-feedback').innerText = '';
+            document.getElementById('lm-next-btn').classList.add('hidden');
+            
+            const optionsContainer = document.getElementById('lm-options');
+            optionsContainer.innerHTML = '';
+
+            options.forEach(item => {
+                const btn = document.createElement('div');
+                btn.className = "w-40 h-40 bg-white border-4 border-gray-200 rounded-2xl overflow-hidden cursor-pointer hover:scale-105 transition-transform pop relative";
+                btn.innerHTML = `<img src="${item.img}" alt="Option" class="w-full h-full object-cover">`;
+                
+                btn.onclick = () => {
+                    if(!document.getElementById('lm-next-btn').classList.contains('hidden')) return; // already answered
+
+                    if(item.letter === currentQuestionItem.letter) {
+                        btn.classList.replace('border-gray-200', 'border-green-500');
+                        btn.innerHTML += `<div class="absolute inset-0 bg-green-500/20 flex items-center justify-center text-green-600 text-6xl drop-shadow-md"><i class="fa-solid fa-check"></i></div>`;
+                        document.getElementById('lm-feedback').innerHTML = `<span class="text-green-500">Correct! ${currentQuestionItem.letter} is for ${currentQuestionItem.word}!</span>`;
+                        playSuccess();
+                        speak(`Correct! ${currentQuestionItem.letter} is for ${currentQuestionItem.word}`);
+                        document.getElementById('lm-next-btn').classList.remove('hidden');
+                    } else {
+                        btn.classList.add('shake', 'border-red-500');
+                        setTimeout(() => btn.classList.remove('shake', 'border-red-500'), 500);
+                        playError();
+                    }
+                };
+                optionsContainer.appendChild(btn);
+            });
+
+            // Automatically play sound on load
+            setTimeout(playCurrentQuestionAudio, 500);
+        }
+
+        // --- MODE 3: FIND PHONEME ---
+        function initFindPhoneme() {
+            const items = getRandomItems(phonicsData, 3);
+            currentQuestionItem = items[0];
+            const options = shuffle([...items]);
+
+            document.getElementById('fp-feedback').innerText = '';
+            document.getElementById('fp-next-btn').classList.add('hidden');
+            document.getElementById('fp-image').src = currentQuestionItem.img;
+
+            const optionsContainer = document.getElementById('fp-options');
+            optionsContainer.innerHTML = '';
+
+            options.forEach(item => {
+                const btn = document.createElement('button');
+                btn.className = "w-24 h-24 bg-white border-4 border-purple-200 text-purple-600 text-4xl font-extrabold rounded-2xl cursor-pointer hover:bg-purple-50 transition-all pop shadow-sm flex items-center justify-center flex-col";
+                btn.innerHTML = `${item.letter}<span class="text-sm font-normal mt-1 text-gray-500">${item.amharic}</span>`;
+                
+                btn.onclick = () => {
+                    if(!document.getElementById('fp-next-btn').classList.contains('hidden')) return;
+
+                    if(item.letter === currentQuestionItem.letter) {
+                        btn.classList.replace('border-purple-200', 'border-green-500');
+                        btn.classList.add('bg-green-50', 'text-green-600');
+                        document.getElementById('fp-feedback').innerHTML = `<span class="text-green-500">Great Job!</span>`;
+                        playSuccess();
+                        speak(`${currentQuestionItem.letter}`);
+                        document.getElementById('fp-next-btn').classList.remove('hidden');
+                    } else {
+                        btn.classList.add('shake', 'border-red-500', 'text-red-500');
+                        setTimeout(() => btn.classList.remove('shake', 'border-red-500', 'text-red-500'), 500);
+                        playError();
+                    }
+                };
+                optionsContainer.appendChild(btn);
+            });
+
+             setTimeout(playCurrentQuestionAudio, 500);
+        }
+
+
+        // --- MODE 4: AMHARIC MATCH ---
+        let amharicSelections = { left: null, right: null };
+        let amMatchPairs = [];
+        let matchedCount = 0;
+        let lines = [];
+
+        function initAmharicMatch() {
+            amharicSelections = { left: null, right: null };
+            matchedCount = 0;
+            lines = [];
+            document.getElementById('match-svg-container').innerHTML = '';
+
+            const items = getRandomItems(phonicsData, 4);
+            amMatchPairs = items.map(i => i.letter);
+
+            const leftItems = [...items];
+            const rightItems = shuffle([...items]);
+
+            const leftCol = document.getElementById('am-left-col');
+            const rightCol = document.getElementById('am-right-col');
+            leftCol.innerHTML = '';
+            rightCol.innerHTML = '';
+
+            leftItems.forEach((item, index) => {
+                const btn = document.createElement('button');
+                btn.id = `am-left-${item.letter}`;
+                btn.className = "w-full py-4 bg-white border-4 border-gray-200 rounded-xl text-2xl font-bold text-blue-600 hover:border-blue-400 transition-colors shadow-sm relative";
+                btn.innerHTML = `${item.letter} <span class="text-sm font-normal text-gray-400 block">${item.word}</span>`;
+                btn.onclick = () => handleAmharicSelect('left', item.letter, btn);
+                leftCol.appendChild(btn);
+            });
+
+            rightItems.forEach((item, index) => {
+                const btn = document.createElement('button');
+                btn.id = `am-right-${item.letter}`;
+                btn.className = "w-full py-4 bg-white border-4 border-gray-200 rounded-xl text-3xl font-bold text-orange-600 hover:border-orange-400 transition-colors shadow-sm flex items-center justify-center gap-3";
+                
+                // Add play button to Amharic side for extra interaction
+                btn.innerHTML = `${item.amharic} <i class="fa-solid fa-volume-low text-sm text-gray-300"></i>`;
+                
+                btn.onclick = (e) => {
+                    // if clicking specifically on the speaker, just play sound
+                    if(e.target.classList.contains('fa-volume-low')) {
+                        speak(item.word);
+                        e.stopPropagation();
+                        return;
+                    }
+                    handleAmharicSelect('right', item.letter, btn);
+                };
+                rightCol.appendChild(btn);
+            });
+        }
+
+        function handleAmharicSelect(side, letter, element) {
+            if(element.classList.contains('matched')) return;
+
+            // Deselect previous on same side
+            const prev = amharicSelections[side];
+            if(prev) {
+                document.getElementById(`am-${side}-${prev}`).classList.remove('border-yellow-400', 'bg-yellow-50');
+                document.getElementById(`am-${side}-${prev}`).classList.add('border-gray-200');
+            }
+
+            amharicSelections[side] = letter;
+            element.classList.remove('border-gray-200');
+            element.classList.add('border-yellow-400', 'bg-yellow-50');
+
+            checkAmharicMatch();
+        }
+
+        function checkAmharicMatch() {
+            if(amharicSelections.left && amharicSelections.right) {
+                const lLetter = amharicSelections.left;
+                const rLetter = amharicSelections.right;
+                const lEl = document.getElementById(`am-left-${lLetter}`);
+                const rEl = document.getElementById(`am-right-${rLetter}`);
+
+                if(lLetter === rLetter) {
+                    // Match!
+                    playSuccess();
+                    speak(`Correct. ${lLetter} makes the same sound as ${phonicsData.find(x => x.letter === lLetter).amharic}`);
+                    
+                    lEl.classList.replace('border-yellow-400', 'border-green-500');
+                    lEl.classList.replace('bg-yellow-50', 'bg-green-50');
+                    lEl.classList.add('matched', 'opacity-70');
+                    
+                    rEl.classList.replace('border-yellow-400', 'border-green-500');
+                    rEl.classList.replace('bg-yellow-50', 'bg-green-50');
+                    rEl.classList.add('matched', 'opacity-70');
+                    
+                    drawLine(lEl, rEl);
+                    matchedCount++;
+                    
+                    amharicSelections = { left: null, right: null };
+
+                    if(matchedCount === 4) {
+                        setTimeout(() => {
+                            speak("Incredible! You matched them all!");
+                        }, 1000);
+                    }
+                } else {
+                    // Wrong
+                    playError();
+                    lEl.classList.add('shake', 'border-red-500');
+                    rEl.classList.add('shake', 'border-red-500');
+                    
+                    setTimeout(() => {
+                        lEl.classList.remove('shake', 'border-red-500', 'border-yellow-400', 'bg-yellow-50');
+                        rEl.classList.remove('shake', 'border-red-500', 'border-yellow-400', 'bg-yellow-50');
+                        lEl.classList.add('border-gray-200');
+                        rEl.classList.add('border-gray-200');
+                        amharicSelections = { left: null, right: null };
+                    }, 600);
+                }
+            }
+        }
+
+        function drawLine(el1, el2) {
+            const svg = document.getElementById('match-svg-container');
+            const containerRect = svg.getBoundingClientRect();
+            
+            const rect1 = el1.getBoundingClientRect();
+            const rect2 = el2.getBoundingClientRect();
+
+            const x1 = rect1.right - containerRect.left;
+            const y1 = rect1.top + (rect1.height / 2) - containerRect.top;
+            
+            const x2 = rect2.left - containerRect.left;
+            const y2 = rect2.top + (rect2.height / 2) - containerRect.top;
+
+            const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            line.setAttribute("x1", x1);
+            line.setAttribute("y1", y1);
+            line.setAttribute("x2", x2);
+            line.setAttribute("y2", y2);
+            line.setAttribute("stroke", "#22c55e");
+            line.setAttribute("stroke-width", "4");
+            line.setAttribute("stroke-dasharray", "8");
+            line.classList.add('pop');
+            
+            svg.appendChild(line);
+        }
+
+        // Initialize application on default tab
+        window.onload = () => {
+            switchMode('flashcards');
+        };
+
+    </script>
+</body>
+</html>
